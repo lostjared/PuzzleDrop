@@ -1,0 +1,22 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+<file>img/red1.png</file>
+<file>img/red2.png</file>
+<file>img/red3.png</file>
+<file>img/green1.png</file>
+<file>img/green2.png</file>
+<file>img/green3.png</file>
+<file>img/blue1.png</file>
+<file>img/blue2.png</file>
+<file>img/blue3.png</file>
+<file>img/level1.png</file>
+<file>img/level2.png</file>
+<file>img/level3.png</file>
+<file>img/level4.png</file>
+<file>img/level5.png</file>
+<file>img/level6.png</file>
+<file>img/level7.png</file>
+<file>img/level8.png</file>
+</qresource>
+</RCC>
+
