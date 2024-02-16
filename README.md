@@ -7,4 +7,4 @@
 
 2D Puzzle Game
 
-You play by moving the blocks left and right with the arrow keys. You press A and S to shift the blocks, Z and X to rotate them Line up the pattern of the same color 1 2 3, or 3 2 1 Either horizontal, vertical, or diagonal line. There is a wildcard block that flashes different colors, it will match any block. Clear as many lines as you can.
+In this game, your objective is to manipulate blocks by moving them horizontally using the left and right arrow keys. Utilize the 'A' and 'S' keys to shift the blocks, and the 'Z' and 'X' keys to rotate them. Your goal is to align patterns of identical colors in sequences of 1-2-3 or 3-2-1, forming either horizontal, vertical, or diagonal lines. There is also a special wildcard block that cycles through various colors and can match with any other block. Aim to clear as many lines as possible to advance in the game.
