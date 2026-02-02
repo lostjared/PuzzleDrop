@@ -16,6 +16,7 @@ namespace puzzle {
         int x,y;
         BlockType type;
         int clear;
+        int flash_counter;
     public:
         Block();
         Block(const Block &b);
@@ -30,6 +31,7 @@ namespace puzzle {
         bool operator==(const Block &b);
         bool operator==(const BlockType &type);
         int &clearValue();
+        int &flashCounter();
         void clearBlock();
         friend class Piece;
         friend std::ostream &operator<<(std::ostream &out, Block &b);

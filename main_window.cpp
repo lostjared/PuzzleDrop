@@ -81,8 +81,15 @@ GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIG
     connect(background_proc, SIGNAL(timeout()), this, SLOT(proc()));
     first_game = true;
     
-    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
-    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
+    
+    for(int i = 0; i < 3; ++i) {
+        lastFrameMatchColor[i] = rand() % 9;
+    }
+    for(int x = 0; x < 20; ++x) {
+        for(int y = 0; y < 30; ++y) {
+            lastFrameGridMatchColor[x][y] = rand() % 9;
+        }
+    }
 }
 
 QImage GameWindow::loadAndScale(QString filename) {
@@ -146,12 +153,23 @@ void GameWindow::paintEvent(QPaintEvent *e) {
                 int image = static_cast<int>(b->getType())-2;
                 
                 if(b->getType() == BlockType::MATCH) {
-                    image = (rand()%9); 
+                    image = lastFrameGridMatchColor[x][y]; 
                 } else if(b->getType() == BlockType::BLOCK_CLEAR) {
                     if(!colorsCached)
                         lastFrameGridMatchColor[x][y] = (rand()%9);
-                    image = lastFrameGridMatchColor[x][y];
+                    
+                    
+                    int flash_cycle = (b->flashCounter() / 3) % 9;  
+                    image = flash_cycle;
+                    
+                    
+                    int flash_phase = b->flashCounter() % 12;
+                    if(flash_phase >= 6 && flash_phase < 8) {
+                        
+                        continue;
+                    }
                 }
+                
                 QImage scaledBlock = blocks[image].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
                 paint.drawImage(offsetX + x*blockWidth, offsetY+(y*blockHeight), scaledBlock);
             }
@@ -162,13 +180,13 @@ void GameWindow::paintEvent(QPaintEvent *e) {
     int b2 = static_cast<int>(p.blocks[1].getType())-2;
     int b3 = static_cast<int>(p.blocks[2].getType())-2;
     if(p.blocks[0] == BlockType::MATCH) {
-        b1 = (rand()%9); 
+        b1 = lastFrameMatchColor[0]; 
     }
     if(p.blocks[1] == BlockType::MATCH) {
-        b2 = (rand()%9); 
+        b2 = lastFrameMatchColor[1]; 
     }
     if(p.blocks[2] == BlockType::MATCH) {
-        b3 = (rand()%9); 
+        b3 = lastFrameMatchColor[2]; 
     }
     colorsCached = true;
     QImage scaledB1 = blocks[b1].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -269,8 +287,15 @@ void GameWindow::gameOver() {
   
 
 void GameWindow::update() {
-    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
-    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
+    
+    for(int i = 0; i < 3; ++i) {
+        lastFrameMatchColor[i] = rand() % 9;
+    }
+    for(int x = 0; x < 20; ++x) {
+        for(int y = 0; y < 30; ++y) {
+            lastFrameGridMatchColor[x][y] = rand() % 9;
+        }
+    }
     grid.keyDown();
     repaint();
     if(grid.gameOver() == true) {
@@ -281,8 +306,15 @@ void GameWindow::update() {
 }
 
 void GameWindow::proc() {
-    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
-    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
+    
+    for(int i = 0; i < 3; ++i) {
+        lastFrameMatchColor[i] = rand() % 9;
+    }
+    for(int x = 0; x < 20; ++x) {
+        for(int y = 0; y < 30; ++y) {
+            lastFrameGridMatchColor[x][y] = rand() % 9;
+        }
+    }
     grid.procBlocks();
     grid.procMoveDown();
     repaint();  
@@ -290,12 +322,21 @@ void GameWindow::proc() {
   
 
 void GameWindow::newGame() {
-     int interval = 1000;
+    int interval = 1000;
     if(difficulty_level == 1)
         interval = 750;
     else if(difficulty_level == 2)
         interval = 500;
     grid.clearGrid();
+    
+    for(int i = 0; i < 3; ++i) {
+        lastFrameMatchColor[i] = rand() % 9;
+    }
+    for(int x = 0; x < 20; ++x) {
+        for(int y = 0; y < 30; ++y) {
+            lastFrameGridMatchColor[x][y] = rand() % 9;
+        }
+    }
     game_started = true;
     timer->setInterval(interval);
     background_proc->setInterval(10);

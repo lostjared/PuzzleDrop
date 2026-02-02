@@ -2,17 +2,18 @@
 
 namespace puzzle {
 
-    Block::Block() : x{0}, y{0}, type{BlockType::BLOCK_NULL}, clear{0} {}
+    Block::Block() : x{0}, y{0}, type{BlockType::BLOCK_NULL}, clear{0}, flash_counter{0} {}
 
-    Block::Block(int xx, int yy, BlockType t) : x{xx}, y{yy}, type{t}, clear{0} {}
+    Block::Block(int xx, int yy, BlockType t) : x{xx}, y{yy}, type{t}, clear{0}, flash_counter{0} {}
 
-    Block::Block(const Block &b) : x{b.x}, y{b.y}, type{b.type}, clear{b.clear} {}
+    Block::Block(const Block &b) : x{b.x}, y{b.y}, type{b.type}, clear{b.clear}, flash_counter{b.flash_counter} {}
     
     Block &Block::operator=(const Block &b) {
         x = b.x;
         y = b.y;
         type = b.type;
         clear = b.clear;
+        flash_counter = b.flash_counter;
         return *this;
     }
 
@@ -20,6 +21,7 @@ namespace puzzle {
         x = b.x;
         y = b.y;
         type = b.type;
+        flash_counter = b.flash_counter;
         clear = b.clear;
         return *this;
     }
@@ -57,10 +59,14 @@ namespace puzzle {
     int &Block::clearValue() {
         return clear;
     }
+int &Block::flashCounter() {
+        return flash_counter;
+    }
 
     void Block::clearBlock() {
         type = BlockType::BLOCK_CLEAR;
         clear = 1;
+        flash_counter = 0;
     }
 
     std::ostream &operator<<(std::ostream &out, Block &b) {
@@ -131,9 +137,9 @@ namespace puzzle {
             blocks[1].type = b[0];
             blocks[2].type = b[1];
         } else if(dir == D_UP) {
-            blocks[0] = b[1];
-            blocks[1] = b[2];
-            blocks[2] = b[0];
+            blocks[0].type = b[1];
+            blocks[1].type = b[2];
+            blocks[2].type = b[0];
         }
     }
 
@@ -533,6 +539,7 @@ namespace puzzle {
                 Block *b = grid(x,y);
                 if(b != nullptr && b->getType() == BlockType::BLOCK_CLEAR) {
                     b->clearValue() += 1;
+                    b->flashCounter() += 1;
                     if(b->clearValue() > 50) {
                         *b = BlockType::BLOCK_NULL;
                     }
