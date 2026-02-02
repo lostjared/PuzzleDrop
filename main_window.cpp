@@ -321,7 +321,7 @@ void GameWindow::showAbout() {
     QMessageBox box;
     QString info;
     QTextStream stream(&info);
-    stream << tr("Puzzle Drop ") << PUZZLEDROP_VERSION << "\n" << tr("(C) 2022 LostSideDead Software\n Programmed by Jared Bruni\n");
+    stream << tr("Puzzle Drop ") << PUZZLEDROP_VERSION << "\n" << tr("(C) 2026 LostSideDead Software\n Programmed by Jared Bruni\n");
     box.setText(info);
     QPixmap pix = QPixmap(":/img/red3.png");
     box.setIconPixmap(pix.scaled(QSize(64, 64)));
