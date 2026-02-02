@@ -1,4 +1,4 @@
-// just practicing
+
 
 #ifndef _PUZZLE_DROP_H_
 #define _PUZZLE_DROP_H_

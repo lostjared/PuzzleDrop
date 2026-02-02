@@ -80,6 +80,9 @@ GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIG
     background_proc = new QTimer(this);
     connect(background_proc, SIGNAL(timeout()), this, SLOT(proc()));
     first_game = true;
+    
+    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
+    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
 }
 
 QImage GameWindow::loadAndScale(QString filename) {
@@ -93,7 +96,7 @@ void GameWindow::recalculateBlockSize() {
     int availableHeight = height() - menuHeight;
     double blockWidthFromWidth = (double)availableWidth / gridBlocksWidth;
     double blockHeightFromHeight = (double)availableHeight / gridBlocksHeight;
-    double blockWidthFromHeight = blockHeightFromHeight * 2.0; // blocks are 2:1 ratio
+    double blockWidthFromHeight = blockHeightFromHeight * 2.0; 
     
     if (blockWidthFromWidth <= blockWidthFromHeight) {
         blockWidth = (int)blockWidthFromWidth;
@@ -129,12 +132,9 @@ void GameWindow::resizeEvent(QResizeEvent *re) {
 void GameWindow::paintEvent(QPaintEvent *e) {
     Q_UNUSED(e);
     QPainter paint(this);
-    
-    // Fill entire window with black (for letterboxing)
     paint.fillRect(rect(), Qt::black);
-    
-    // Draw background at the grid position
     paint.drawImage(offsetX, offsetY, background[grid.level()-1]);
+    static bool colorsCached = false;
     
     for(int x = 0; x < grid.getWidth(); ++x) {
         for(int y = 0; y < grid.getHeight(); ++y) {
@@ -144,8 +144,14 @@ void GameWindow::paintEvent(QPaintEvent *e) {
             }
              else {
                 int image = static_cast<int>(b->getType())-2;
-                if(b->getType() == BlockType::BLOCK_CLEAR || b->getType() == BlockType::MATCH)
-                    image = (rand()%9);
+                
+                if(b->getType() == BlockType::MATCH) {
+                    image = (rand()%9); 
+                } else if(b->getType() == BlockType::BLOCK_CLEAR) {
+                    if(!colorsCached)
+                        lastFrameGridMatchColor[x][y] = (rand()%9);
+                    image = lastFrameGridMatchColor[x][y];
+                }
                 QImage scaledBlock = blocks[image].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
                 paint.drawImage(offsetX + x*blockWidth, offsetY+(y*blockHeight), scaledBlock);
             }
@@ -155,12 +161,16 @@ void GameWindow::paintEvent(QPaintEvent *e) {
     int b1 = static_cast<int>(p.blocks[0].getType())-2;
     int b2 = static_cast<int>(p.blocks[1].getType())-2;
     int b3 = static_cast<int>(p.blocks[2].getType())-2;
-    if(p.blocks[0] == BlockType::MATCH)
-        b1 = rand()%9;
-    if(p.blocks[1] == BlockType::MATCH)
-        b2 = rand()%9;
-    if(p.blocks[2] == BlockType::MATCH)
-        b3 = rand()%9;
+    if(p.blocks[0] == BlockType::MATCH) {
+        b1 = (rand()%9); 
+    }
+    if(p.blocks[1] == BlockType::MATCH) {
+        b2 = (rand()%9); 
+    }
+    if(p.blocks[2] == BlockType::MATCH) {
+        b3 = (rand()%9); 
+    }
+    colorsCached = true;
     QImage scaledB1 = blocks[b1].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     QImage scaledB2 = blocks[b2].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     QImage scaledB3 = blocks[b3].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -171,7 +181,6 @@ void GameWindow::paintEvent(QPaintEvent *e) {
         QFont font = paint.font();
         QPen pen = paint.pen();
         pen.setColor(QColor(QRgb(0xFFFFFF)));
-        // Scale font size based on block size
         int fontSize = blockHeight * 2;
         if (fontSize < 20) fontSize = 20;
         if (fontSize > 70) fontSize = 70;
@@ -179,7 +188,6 @@ void GameWindow::paintEvent(QPaintEvent *e) {
         font.setBold(true);
         paint.setFont(font);
         paint.setPen(pen);
-        // Center the text
         int textX = offsetX + (gridBlocksWidth * blockWidth) / 2 - fontSize * 4;
         int textY = offsetY + (gridBlocksHeight * blockHeight) / 3;
         paint.drawText(textX, textY, "Puzzle Drop");
@@ -261,6 +269,8 @@ void GameWindow::gameOver() {
   
 
 void GameWindow::update() {
+    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
+    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
     grid.keyDown();
     repaint();
     if(grid.gameOver() == true) {
@@ -271,6 +281,8 @@ void GameWindow::update() {
 }
 
 void GameWindow::proc() {
+    memset(lastFrameMatchColor, 0, sizeof(lastFrameMatchColor));
+    memset(lastFrameGridMatchColor, 0, sizeof(lastFrameGridMatchColor));
     grid.procBlocks();
     grid.procMoveDown();
     repaint();  

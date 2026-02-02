@@ -1,7 +1,7 @@
 #include"puzzle_drop.hpp"
 
 namespace puzzle {
-// *** Block
+
     Block::Block() : x{0}, y{0}, type{BlockType::BLOCK_NULL}, clear{0} {}
 
     Block::Block(int xx, int yy, BlockType t) : x{xx}, y{yy}, type{t}, clear{0} {}
@@ -68,7 +68,7 @@ namespace puzzle {
         return out;
     }
 
-// *** Piece
+
 
     Piece::Piece() {
 
@@ -192,7 +192,7 @@ namespace puzzle {
         return out;
     }
 
-// *** Grid
+
 
     Grid::Grid(int w, int h) : grid_w{w}, grid_h{h} {
         blocks = new Block*[w];
@@ -365,7 +365,7 @@ namespace puzzle {
                        return true;
                 }
 
-                // grid across
+                
                  if(checkBlock(x,y,BlockType::RED1) && checkBlock(x+1,y,BlockType::RED2) && checkBlock(x+2,y,BlockType::RED3)) {
                    addScore();
                    blocks[x][y].clearBlock();
@@ -414,7 +414,7 @@ namespace puzzle {
                        return true;
                 }
 
-                // grid digaonal
+                
                 if(checkBlock(x,y, BlockType::RED1) && checkBlock(x+1, y+1, BlockType::RED2) && checkBlock(x+2, y+2, BlockType::RED3)) {
                     addScore();
                     blocks[x][y].clearBlock();

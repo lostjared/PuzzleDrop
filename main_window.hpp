@@ -25,6 +25,7 @@ public:
     void resizeEvent(QResizeEvent *re);
     void gameOver();
     void recalculateBlockSize();
+    void resetColorCache();
     
 public slots:
     void update();
@@ -58,6 +59,8 @@ private:
     int offsetX;
     int offsetY;
     double gridAspectRatio;
+    int lastFrameMatchColor[3];
+    int lastFrameGridMatchColor[20][30];
 };
 
 
