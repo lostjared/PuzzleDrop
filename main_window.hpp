@@ -12,7 +12,7 @@
 
 #include"puzzle_drop.hpp"
 
-#define PUZZLEDROP_VERSION "v1.0.0"
+#define PUZZLEDROP_VERSION "v1.1.0"
 
 class HighScores;
 
