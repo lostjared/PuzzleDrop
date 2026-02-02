@@ -8,12 +8,11 @@
 #include<QMenu>
 #include<QAction>
 #include<QMenuBar>
+#include<QResizeEvent>
 
 #include"puzzle_drop.hpp"
 
 #define PUZZLEDROP_VERSION "v1.0.0"
-
-enum { BLOCK_WIDTH=64, BLOCK_HEIGHT=32 };
 
 class HighScores;
 
@@ -23,7 +22,9 @@ public:
     GameWindow();
     void paintEvent(QPaintEvent *e);
     void keyPressEvent(QKeyEvent *ke);
+    void resizeEvent(QResizeEvent *re);
     void gameOver();
+    void recalculateBlockSize();
     
 public slots:
     void update();
@@ -50,6 +51,13 @@ private:
     bool game_started;
     bool first_game;
     HighScores *scores_window;
+    int gridBlocksWidth;
+    int gridBlocksHeight;
+    int blockWidth;
+    int blockHeight;
+    int offsetX;
+    int offsetY;
+    double gridAspectRatio;
 };
 
 

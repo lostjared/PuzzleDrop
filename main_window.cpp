@@ -7,12 +7,24 @@
 #include<QTextStream>
 
 using puzzle::BlockType;
+static const int DEFAULT_BLOCK_WIDTH = 64;
+static const int DEFAULT_BLOCK_HEIGHT = 32;
 
-GameWindow::GameWindow() : grid(1280/BLOCK_WIDTH, 720/BLOCK_HEIGHT) {
+GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIGHT) {
     scores_window = new HighScores(this);
     setWindowTitle("PuzzleDrop");
     setWindowIcon(QPixmap(":/img/green3.png").scaled(32, 32));
-    setFixedSize(1280, 745);
+    gridBlocksWidth = 1280 / DEFAULT_BLOCK_WIDTH;  
+    gridBlocksHeight = 720 / DEFAULT_BLOCK_HEIGHT; 
+    gridAspectRatio = (double)(gridBlocksWidth * DEFAULT_BLOCK_WIDTH) / (double)(gridBlocksHeight * DEFAULT_BLOCK_HEIGHT);
+
+    blockWidth = DEFAULT_BLOCK_WIDTH;
+    blockHeight = DEFAULT_BLOCK_HEIGHT;
+    offsetX = 0;
+    offsetY = 25; 
+
+    setMinimumSize(640, 400);
+    resize(1280, 745);
     blocks[0] = QImage(":/img/red1.png");
     blocks[1] = QImage(":/img/red2.png");
     blocks[2] = QImage(":/img/red3.png");
@@ -72,26 +84,70 @@ GameWindow::GameWindow() : grid(1280/BLOCK_WIDTH, 720/BLOCK_HEIGHT) {
 
 QImage GameWindow::loadAndScale(QString filename) {
     QImage img = QImage(filename);
-    return img.scaled(1280, 745);
+    return img; 
+}
+
+void GameWindow::recalculateBlockSize() {
+    int menuHeight = menuBar()->height();
+    int availableWidth = width();
+    int availableHeight = height() - menuHeight;
+    double blockWidthFromWidth = (double)availableWidth / gridBlocksWidth;
+    double blockHeightFromHeight = (double)availableHeight / gridBlocksHeight;
+    double blockWidthFromHeight = blockHeightFromHeight * 2.0; // blocks are 2:1 ratio
+    
+    if (blockWidthFromWidth <= blockWidthFromHeight) {
+        blockWidth = (int)blockWidthFromWidth;
+        blockHeight = blockWidth / 2;
+    } else {
+        blockHeight = (int)blockHeightFromHeight;
+        blockWidth = blockHeight * 2;
+    }
+    
+    if (blockWidth < 16) blockWidth = 16;
+    if (blockHeight < 8) blockHeight = 8;
+
+    int gridPixelWidth = blockWidth * gridBlocksWidth;
+    int gridPixelHeight = blockHeight * gridBlocksHeight;
+    
+    offsetX = (availableWidth - gridPixelWidth) / 2;
+    offsetY = menuHeight + (availableHeight - gridPixelHeight) / 2;
+}
+
+void GameWindow::resizeEvent(QResizeEvent *re) {
+    Q_UNUSED(re);
+    recalculateBlockSize();
+    int gridPixelWidth = blockWidth * gridBlocksWidth;
+    int gridPixelHeight = blockHeight * gridBlocksHeight;
+    for (int i = 0; i < 8; ++i) {
+        QString filename = QString(":/img/level%1.png").arg(i + 1);
+        background[i] = QImage(filename).scaled(gridPixelWidth, gridPixelHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    repaint();
 }
 
 
 void GameWindow::paintEvent(QPaintEvent *e) {
     Q_UNUSED(e);
     QPainter paint(this);
-    int offset_y = 25;
-    paint.drawImage(0, 0, background[grid.level()-1]);
+    
+    // Fill entire window with black (for letterboxing)
+    paint.fillRect(rect(), Qt::black);
+    
+    // Draw background at the grid position
+    paint.drawImage(offsetX, offsetY, background[grid.level()-1]);
+    
     for(int x = 0; x < grid.getWidth(); ++x) {
         for(int y = 0; y < grid.getHeight(); ++y) {
             puzzle::Block *b = grid.grid(x,y);
             if(b != 0 && b->getType() == puzzle::BlockType::BLOCK_NULL) {
-                paint.fillRect(QRect(x*BLOCK_WIDTH+1, offset_y+(y*BLOCK_HEIGHT+1), BLOCK_WIDTH-1, BLOCK_HEIGHT-1), QBrush("#000000"));
+                paint.fillRect(QRect(offsetX + x*blockWidth+1, offsetY+(y*blockHeight+1), blockWidth-1, blockHeight-1), QBrush("#000000"));
             }
              else {
                 int image = static_cast<int>(b->getType())-2;
                 if(b->getType() == BlockType::BLOCK_CLEAR || b->getType() == BlockType::MATCH)
                     image = (rand()%9);
-                paint.drawImage(x*BLOCK_WIDTH, offset_y+(y*BLOCK_HEIGHT), blocks[image]);
+                QImage scaledBlock = blocks[image].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                paint.drawImage(offsetX + x*blockWidth, offsetY+(y*blockHeight), scaledBlock);
             }
         }
     }  
@@ -105,32 +161,45 @@ void GameWindow::paintEvent(QPaintEvent *e) {
         b2 = rand()%9;
     if(p.blocks[2] == BlockType::MATCH)
         b3 = rand()%9;
-    paint.drawImage(p.blocks[0].getX()*BLOCK_WIDTH, offset_y+(p.blocks[0].getY()*BLOCK_HEIGHT), blocks[b1]);
-    paint.drawImage(p.blocks[1].getX()*BLOCK_WIDTH, offset_y+(p.blocks[1].getY()*BLOCK_HEIGHT), blocks[b2]);
-    paint.drawImage(p.blocks[2].getX()*BLOCK_WIDTH, offset_y+(p.blocks[2].getY()*BLOCK_HEIGHT), blocks[b3]);
+    QImage scaledB1 = blocks[b1].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    QImage scaledB2 = blocks[b2].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    QImage scaledB3 = blocks[b3].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    paint.drawImage(offsetX + p.blocks[0].getX()*blockWidth, offsetY+(p.blocks[0].getY()*blockHeight), scaledB1);
+    paint.drawImage(offsetX + p.blocks[1].getX()*blockWidth, offsetY+(p.blocks[1].getY()*blockHeight), scaledB2);
+    paint.drawImage(offsetX + p.blocks[2].getX()*blockWidth, offsetY+(p.blocks[2].getY()*blockHeight), scaledB3);
     if(game_started == false) {
         QFont font = paint.font();
         QPen pen = paint.pen();
         pen.setColor(QColor(QRgb(0xFFFFFF)));
-        font.setPixelSize(70);
+        // Scale font size based on block size
+        int fontSize = blockHeight * 2;
+        if (fontSize < 20) fontSize = 20;
+        if (fontSize > 70) fontSize = 70;
+        font.setPixelSize(fontSize);
         font.setBold(true);
         paint.setFont(font);
         paint.setPen(pen);
-        paint.drawText(425, offset_y+150, "Puzzle Drop");
-        paint.drawText(235, offset_y+250, "Click New Game in Menu");
+        // Center the text
+        int textX = offsetX + (gridBlocksWidth * blockWidth) / 2 - fontSize * 4;
+        int textY = offsetY + (gridBlocksHeight * blockHeight) / 3;
+        paint.drawText(textX, textY, "Puzzle Drop");
+        paint.drawText(textX - fontSize * 3, textY + fontSize + 20, "Click New Game in Menu");
     } 
     if(game_started == true || first_game == false) {
         QFont font = paint.font();
         QPen pen = paint.pen();
         pen.setColor(QColor(QRgb(0xFFFFFF)));
-        font.setPixelSize(25);
+        int fontSize = blockHeight * 0.8;
+        if (fontSize < 12) fontSize = 12;
+        if (fontSize > 25) fontSize = 25;
+        font.setPixelSize(fontSize);
         font.setBold(true);
         paint.setFont(font);
         paint.setPen(pen);
         QString text;
         QTextStream stream(&text);
         stream << "Level: " << grid.level() << " Lines: " << grid.currentLines();
-        paint.drawText(25, offset_y+60, text);
+        paint.drawText(offsetX + 25, offsetY + blockHeight * 2, text);
     }
 }
 
