@@ -26,6 +26,7 @@ public:
     void gameOver();
     void recalculateBlockSize();
     void resetColorCache();
+    void resetPieceState();
     
 public slots:
     void update();
@@ -34,6 +35,7 @@ public slots:
     void setMedium();
     void setHard();
     void newGame();
+    void quitGame();
     void showAbout();
     void showHowTo();
     void openScores();
@@ -44,7 +46,7 @@ private:
     QImage blocks[9];
     QImage background[8];
     QMenu *file_menu, *options_menu, *help_menu, *diff_menu;
-    QAction *file_menu_new, *file_menu_scores;
+    QAction *file_menu_new, *file_menu_quit, *file_menu_scores;
     QAction *diff_easy, *diff_med, *diff_hard;
     QAction *help_about, *help_howto;
     QImage loadAndScale(QString filename);
@@ -68,4 +70,3 @@ private:
 
 
 #endif
-

@@ -1,5 +1,7 @@
 #include "high_scores.hpp"
+#include<QLinearGradient>
 #include<QPainter>
+#include<QPainterPath>
 #include<QTextStream>
 #include<string>
 #include<QInputDialog>
@@ -16,8 +18,12 @@ bool Score::operator<(const Score &s) const {
 }
 
 HighScores::HighScores(QWidget *parent) : QDialog(parent), settings("LostSideDead", "PuzzleDrop") {
+    setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
     setFixedSize(640, 500);
-    setWindowTitle("High Scores Window");
+    setMinimumSize(640, 500);
+    setMaximumSize(640, 500);
+    setSizeGripEnabled(false);
+    setWindowTitle("High Scores");
     setWindowIcon(QIcon(QPixmap(":/img/green3.png").scaled(32, 32)));
     loadScores();
 }
@@ -29,31 +35,55 @@ HighScores::~HighScores() {
 void HighScores::paintEvent(QPaintEvent *e) {
     Q_UNUSED(e);
     QPainter paint(this);
-    paint.fillRect(0, 0, 640, 500, QBrush("#000000"));
-    QFont font = paint.font();
-    QPen pen = paint.pen();
-    pen.setColor(QColor(QRgb(0xFF0000)));
-    font.setPixelSize(40);
-    font.setBold(true);
-    paint.setFont(font);
-    paint.setPen(pen);
-    paint.drawText(50, 50, "High Scores");
-    pen.setColor(QColor(QRgb(0xFFFFFF)));
-    font.setPixelSize(30);
-    font.setBold(true);
-    paint.setPen(pen);
-    font.setUnderline(true);
-    paint.setFont(font);
-    paint.drawText(50, 100, "Rank\t\tLines\t\tName");
-    font.setUnderline(false);
-    paint.setFont(font);
-    int pos = 150;
+    paint.setRenderHint(QPainter::Antialiasing, true);
+
+    QLinearGradient background(rect().topLeft(), rect().bottomRight());
+    background.setColorAt(0.0, QColor("#101820"));
+    background.setColorAt(0.55, QColor("#172833"));
+    background.setColorAt(1.0, QColor("#070b0f"));
+    paint.fillRect(rect(), background);
+
+    QRectF panel(28, 28, width() - 56, height() - 56);
+    QPainterPath panelPath;
+    panelPath.addRoundedRect(panel, 18, 18);
+    paint.fillPath(panelPath, QColor(7, 12, 16, 190));
+    paint.setPen(QPen(QColor(255, 255, 255, 42), 1));
+    paint.drawPath(panelPath);
+
+    QFont titleFont = paint.font();
+    titleFont.setPixelSize(38);
+    titleFont.setBold(true);
+    paint.setFont(titleFont);
+    paint.setPen(QColor("#fff4df"));
+    paint.drawText(QRectF(52, 42, width() - 104, 48), Qt::AlignLeft | Qt::AlignVCenter, tr("High Scores"));
+
+    QFont labelFont = paint.font();
+    labelFont.setPixelSize(13);
+    labelFont.setBold(true);
+    labelFont.setLetterSpacing(QFont::AbsoluteSpacing, 1.4);
+    paint.setFont(labelFont);
+    paint.setPen(QColor("#8fb6bf"));
+    paint.drawText(QRectF(56, 104, 70, 24), Qt::AlignLeft | Qt::AlignVCenter, tr("RANK"));
+    paint.drawText(QRectF(148, 104, 95, 24), Qt::AlignLeft | Qt::AlignVCenter, tr("LINES"));
+    paint.drawText(QRectF(268, 104, 300, 24), Qt::AlignLeft | Qt::AlignVCenter, tr("PLAYER"));
+
+    QFont rowFont = paint.font();
+    rowFont.setPixelSize(20);
+    rowFont.setBold(false);
+    paint.setFont(rowFont);
+
+    int pos = 138;
     for(int i = 0; i < 10; ++i) {
-        QString value;
-        QTextStream stream(&value);
-        stream << (i+1) << "\t\t" << scores[i].lines << "\t\t" << scores[i].name;
-        paint.drawText(50,pos, value);
-        pos += 35;
+        QRectF row(48, pos, width() - 96, 30);
+        QPainterPath rowPath;
+        rowPath.addRoundedRect(row, 8, 8);
+        paint.fillPath(rowPath, i % 2 == 0 ? QColor(255, 255, 255, 18) : QColor(255, 255, 255, 9));
+
+        paint.setPen(i == 0 ? QColor("#ffd166") : QColor("#f4efe6"));
+        paint.drawText(QRectF(64, pos, 52, 30), Qt::AlignLeft | Qt::AlignVCenter, QString::number(i + 1));
+        paint.drawText(QRectF(148, pos, 90, 30), Qt::AlignLeft | Qt::AlignVCenter, QString::number(scores[i].lines));
+        paint.drawText(QRectF(268, pos, 300, 30), Qt::AlignLeft | Qt::AlignVCenter, scores[i].name);
+        pos += 34;
     }
 }
 
@@ -94,7 +124,7 @@ void HighScores::addScore(QString name, int lines) {
 
 bool HighScores::inputName(QString &text) {
     bool ok;
-    text = QInputDialog::getText(this, tr("Input Your Name"),tr("Your name:"), QLineEdit::Normal,"", &ok);
+    text = QInputDialog::getText(this, tr("New High Score"),tr("Player name:"), QLineEdit::Normal,"", &ok);
     std::string name = text.toStdString();
     for(auto i = name.begin(); i != name.end(); ++i) {
         if(*i == ':')
@@ -103,4 +133,3 @@ bool HighScores::inputName(QString &text) {
     text = name.c_str();
     return ok;
 }
-

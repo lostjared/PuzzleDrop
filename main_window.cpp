@@ -1,6 +1,9 @@
 #include "main_window.hpp"
 #include "high_scores.hpp"
+#include<QLinearGradient>
 #include<QPainter>
+#include<QPainterPath>
+#include<QKeySequence>
 #include<QMessageBox>
 #include<cstdlib>
 #include<ctime>
@@ -42,17 +45,22 @@ GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIG
     background[5] = loadAndScale(":/img/level6.png");
     background[6] = loadAndScale(":/img/level7.png");
     background[7] = loadAndScale(":/img/level8.png");
-    file_menu = menuBar()->addMenu(tr("&File"));
+    menuBar()->setNativeMenuBar(false);
+    file_menu = menuBar()->addMenu(tr("&Game"));
     options_menu = menuBar()->addMenu(tr("&Options"));
     help_menu = menuBar()->addMenu(tr("&Help"));
     file_menu_new = new QAction(tr("&New Game"), this);
+    file_menu_new->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
     file_menu->addAction(file_menu_new);
-    file_menu_scores = new QAction(tr("High Scores"), this);
+    file_menu_quit = new QAction(tr("&Quit Game"), this);
+    file_menu->addAction(file_menu_quit);
+    file_menu_scores = new QAction(tr("&High Scores"), this);
+    file_menu_scores->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_H));
     file_menu->addAction(file_menu_scores);
-    diff_menu = options_menu->addMenu(tr("Difficulty"));
-    diff_easy = new QAction(tr("Easy"), this);
-    diff_med = new QAction(tr("Medium"), this);
-    diff_hard = new QAction(tr("Hard"), this);
+    diff_menu = options_menu->addMenu(tr("&Difficulty"));
+    diff_easy = new QAction(tr("&Easy"), this);
+    diff_med = new QAction(tr("&Medium"), this);
+    diff_hard = new QAction(tr("&Hard"), this);
     diff_easy->setCheckable(true);
     diff_easy->setChecked(true);
     diff_med->setCheckable(true);
@@ -74,14 +82,22 @@ GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIG
     help_menu->addAction(help_howto);
     help_menu->addAction(help_about);
     connect(file_menu_new, SIGNAL(triggered()), this, SLOT(newGame()));
+    connect(file_menu_quit, SIGNAL(triggered()), this, SLOT(quitGame()));
     connect(file_menu_scores, SIGNAL(triggered()), this, SLOT(openScores()));
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(update()));
     background_proc = new QTimer(this);
     connect(background_proc, SIGNAL(timeout()), this, SLOT(proc()));
     first_game = true;
-    
-    
+    resetColorCache();
+}
+
+QImage GameWindow::loadAndScale(QString filename) {
+    QImage img = QImage(filename);
+    return img; 
+}
+
+void GameWindow::resetColorCache() {
     for(int i = 0; i < 3; ++i) {
         lastFrameMatchColor[i] = rand() % 9;
     }
@@ -92,9 +108,8 @@ GameWindow::GameWindow() : grid(1280/DEFAULT_BLOCK_WIDTH, 720/DEFAULT_BLOCK_HEIG
     }
 }
 
-QImage GameWindow::loadAndScale(QString filename) {
-    QImage img = QImage(filename);
-    return img; 
+void GameWindow::resetPieceState() {
+    grid.getPiece().newPiece(grid.getWidth() / 2, 0);
 }
 
 void GameWindow::recalculateBlockSize() {
@@ -139,7 +154,22 @@ void GameWindow::resizeEvent(QResizeEvent *re) {
 void GameWindow::paintEvent(QPaintEvent *e) {
     Q_UNUSED(e);
     QPainter paint(this);
-    paint.fillRect(rect(), Qt::black);
+    paint.setRenderHint(QPainter::Antialiasing, true);
+
+    QLinearGradient windowGradient(rect().topLeft(), rect().bottomRight());
+    windowGradient.setColorAt(0.0, QColor("#0d141a"));
+    windowGradient.setColorAt(0.55, QColor("#111f27"));
+    windowGradient.setColorAt(1.0, QColor("#06090d"));
+    paint.fillRect(rect(), windowGradient);
+
+    QRect boardRect(offsetX, offsetY, gridBlocksWidth * blockWidth, gridBlocksHeight * blockHeight);
+    QRect boardFrame = boardRect.adjusted(-10, -10, 10, 10);
+    QPainterPath boardFramePath;
+    boardFramePath.addRoundedRect(boardFrame, 14, 14);
+    paint.fillPath(boardFramePath, QColor(0, 0, 0, 120));
+    paint.setPen(QPen(QColor(255, 255, 255, 34), 1));
+    paint.drawPath(boardFramePath);
+
     paint.drawImage(offsetX, offsetY, background[grid.level()-1]);
     static bool colorsCached = false;
     
@@ -175,57 +205,85 @@ void GameWindow::paintEvent(QPaintEvent *e) {
             }
         }
     }  
-    puzzle::Piece &p = grid.getPiece();
-    int b1 = static_cast<int>(p.blocks[0].getType())-2;
-    int b2 = static_cast<int>(p.blocks[1].getType())-2;
-    int b3 = static_cast<int>(p.blocks[2].getType())-2;
-    if(p.blocks[0] == BlockType::MATCH) {
-        b1 = lastFrameMatchColor[0]; 
+    if(game_started == true) {
+        puzzle::Piece &p = grid.getPiece();
+        int b1 = static_cast<int>(p.blocks[0].getType())-2;
+        int b2 = static_cast<int>(p.blocks[1].getType())-2;
+        int b3 = static_cast<int>(p.blocks[2].getType())-2;
+        if(p.blocks[0] == BlockType::MATCH) {
+            b1 = lastFrameMatchColor[0]; 
+        }
+        if(p.blocks[1] == BlockType::MATCH) {
+            b2 = lastFrameMatchColor[1]; 
+        }
+        if(p.blocks[2] == BlockType::MATCH) {
+            b3 = lastFrameMatchColor[2]; 
+        }
+        colorsCached = true;
+        QImage scaledB1 = blocks[b1].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QImage scaledB2 = blocks[b2].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QImage scaledB3 = blocks[b3].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        paint.drawImage(offsetX + p.blocks[0].getX()*blockWidth, offsetY+(p.blocks[0].getY()*blockHeight), scaledB1);
+        paint.drawImage(offsetX + p.blocks[1].getX()*blockWidth, offsetY+(p.blocks[1].getY()*blockHeight), scaledB2);
+        paint.drawImage(offsetX + p.blocks[2].getX()*blockWidth, offsetY+(p.blocks[2].getY()*blockHeight), scaledB3);
     }
-    if(p.blocks[1] == BlockType::MATCH) {
-        b2 = lastFrameMatchColor[1]; 
-    }
-    if(p.blocks[2] == BlockType::MATCH) {
-        b3 = lastFrameMatchColor[2]; 
-    }
-    colorsCached = true;
-    QImage scaledB1 = blocks[b1].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    QImage scaledB2 = blocks[b2].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    QImage scaledB3 = blocks[b3].scaled(blockWidth, blockHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    paint.drawImage(offsetX + p.blocks[0].getX()*blockWidth, offsetY+(p.blocks[0].getY()*blockHeight), scaledB1);
-    paint.drawImage(offsetX + p.blocks[1].getX()*blockWidth, offsetY+(p.blocks[1].getY()*blockHeight), scaledB2);
-    paint.drawImage(offsetX + p.blocks[2].getX()*blockWidth, offsetY+(p.blocks[2].getY()*blockHeight), scaledB3);
     if(game_started == false) {
-        QFont font = paint.font();
-        QPen pen = paint.pen();
-        pen.setColor(QColor(QRgb(0xFFFFFF)));
-        int fontSize = blockHeight * 2;
-        if (fontSize < 20) fontSize = 20;
-        if (fontSize > 70) fontSize = 70;
-        font.setPixelSize(fontSize);
-        font.setBold(true);
-        paint.setFont(font);
-        paint.setPen(pen);
-        int textX = offsetX + (gridBlocksWidth * blockWidth) / 2 - fontSize * 4;
-        int textY = offsetY + (gridBlocksHeight * blockHeight) / 3;
-        paint.drawText(textX, textY, "Puzzle Drop");
-        paint.drawText(textX - fontSize * 3, textY + fontSize + 20, "Click New Game in Menu");
+        QRectF card(
+            offsetX + boardRect.width() * 0.17,
+            offsetY + boardRect.height() * 0.20,
+            boardRect.width() * 0.66,
+            boardRect.height() * 0.35
+        );
+        QPainterPath cardPath;
+        cardPath.addRoundedRect(card, 18, 18);
+        paint.fillPath(cardPath, QColor(8, 14, 18, 215));
+        paint.setPen(QPen(QColor(255, 255, 255, 45), 1));
+        paint.drawPath(cardPath);
+
+        QFont titleFont = paint.font();
+        int titleSize = blockHeight * 2;
+        if (titleSize < 26) titleSize = 26;
+        if (titleSize > 72) titleSize = 72;
+        titleFont.setPixelSize(titleSize);
+        titleFont.setBold(true);
+        paint.setFont(titleFont);
+        paint.setPen(QColor("#fff4df"));
+        paint.drawText(card.adjusted(24, 20, -24, -20), Qt::AlignHCenter | Qt::AlignTop, tr("PuzzleDrop"));
+
+        QFont bodyFont = paint.font();
+        int bodySize = blockHeight;
+        if (bodySize < 14) bodySize = 14;
+        if (bodySize > 24) bodySize = 24;
+        bodyFont.setPixelSize(bodySize);
+        bodyFont.setBold(false);
+        paint.setFont(bodyFont);
+        paint.setPen(QColor("#d8e5e8"));
+        paint.drawText(
+            card.adjusted(30, titleSize + 34, -30, -24),
+            Qt::AlignHCenter | Qt::TextWordWrap,
+            tr("Choose Game > New Game to begin. Move with arrow keys, shift with A/S, rotate with Z/X.")
+        );
     } 
-    if(game_started == true || first_game == false) {
+    if(game_started == true) {
+        QRectF hudRect(offsetX + 16, offsetY + 14, 320, blockHeight * 2.15);
+        QPainterPath hudPath;
+        hudPath.addRoundedRect(hudRect, 10, 10);
+        paint.fillPath(hudPath, QColor(8, 14, 18, 190));
+        paint.setPen(QPen(QColor(255, 255, 255, 36), 1));
+        paint.drawPath(hudPath);
+
         QFont font = paint.font();
-        QPen pen = paint.pen();
-        pen.setColor(QColor(QRgb(0xFFFFFF)));
         int fontSize = blockHeight * 0.8;
         if (fontSize < 12) fontSize = 12;
         if (fontSize > 25) fontSize = 25;
         font.setPixelSize(fontSize);
         font.setBold(true);
         paint.setFont(font);
-        paint.setPen(pen);
+        paint.setPen(QColor("#fff4df"));
         QString text;
         QTextStream stream(&text);
-        stream << "Level: " << grid.level() << " Lines: " << grid.currentLines();
-        paint.drawText(offsetX + 25, offsetY + blockHeight * 2, text);
+        stream << "Level " << grid.level() << "    Lines " << grid.currentLines();
+        paint.drawText(hudRect.adjusted(16, 0, -16, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
     }
 }
 
@@ -327,22 +385,29 @@ void GameWindow::newGame() {
         interval = 750;
     else if(difficulty_level == 2)
         interval = 500;
+    timer->stop();
+    background_proc->stop();
     grid.clearGrid();
-    
-    for(int i = 0; i < 3; ++i) {
-        lastFrameMatchColor[i] = rand() % 9;
-    }
-    for(int x = 0; x < 20; ++x) {
-        for(int y = 0; y < 30; ++y) {
-            lastFrameGridMatchColor[x][y] = rand() % 9;
-        }
-    }
+    resetPieceState();
+    resetColorCache();
     game_started = true;
     timer->setInterval(interval);
     background_proc->setInterval(10);
     timer->start();
     background_proc->start();
     diff_menu->setEnabled(false);
+}
+
+void GameWindow::quitGame() {
+    timer->stop();
+    background_proc->stop();
+    grid.clearGrid();
+    resetPieceState();
+    resetColorCache();
+    game_started = false;
+    first_game = true;
+    diff_menu->setEnabled(true);
+    repaint();
 }
 
 void GameWindow::openScores() {
