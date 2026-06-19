@@ -1,8 +1,9 @@
 # PuzzleDrop
 
-![ScreenShot1](https://github.com/lostjared/PuzzleDrop/blob/main/screens/drop-ss1.png?raw=true "screenshot1")
+<img width="1302" height="805" alt="image" src="https://github.com/user-attachments/assets/beafc8e0-c284-4a73-b31d-1916c3c1b225" />
 
-![ScreenShot2](https://github.com/lostjared/PuzzleDrop/blob/main/screens/drop-ss2.png?raw=true "screenshot2")
+<img width="1302" height="805" alt="image" src="https://github.com/user-attachments/assets/f824a8e2-bfdb-4bec-a5f2-0d2016e26934" />
+
 
 PuzzleDrop is a Qt-based falling-block puzzle game built around color matching. Your goal is to stack and shift the falling 3-block piece so that the board forms matching sequences of `1-2-3` or `3-2-1` in a line. Matches can be horizontal, vertical, or diagonal. A flashing wildcard block can stand in for any color.
 
